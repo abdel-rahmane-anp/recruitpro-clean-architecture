@@ -143,9 +143,7 @@ Invalid operations (e.g. accepting a rejected application, an out-of-range score
 
 ## Screenshots
 
-> _Add a screenshot or GIF of the Swagger UI here, e.g. `docs/swagger.png`:_
->
-> `![Swagger UI](docs/swagger.png)`
+![Swagger UI](docs/swagger.png)
 
 ---
 
