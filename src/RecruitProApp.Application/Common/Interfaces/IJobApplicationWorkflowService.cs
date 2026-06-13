@@ -1,15 +1,4 @@
-﻿using RecruitProApp.Domain.Entities.JobApplications;
-
-namespace RecruitProApp.Application.Common.Interfaces
-{
-    public interface IJobApplicationWorkflowService
-    {
-        Task ProcessNewApplicationAsync(JobApplication app);
-        Task ScoreApplicationAsync(JobApplication app);
-        Task SendConfirmationEmailAsync(JobApplication app);
-        Task ScheduleInterviewAsync(Guid applicationId, DateTime interviewDate);
-        Task AcceptApplicationAsync(Guid applicationId);
-        Task RejectApplicationAsync(Guid applicationId, string reason);
-    }
-
-}
+// Obsolete. The job-application workflow (accept / reject / score / preselect)
+// now lives inside the JobApplication aggregate, and side effects (emails) are
+// handled by domain-event handlers in the JobApplications/Events folder.
+// This file is intentionally empty and can be deleted (`git rm`).

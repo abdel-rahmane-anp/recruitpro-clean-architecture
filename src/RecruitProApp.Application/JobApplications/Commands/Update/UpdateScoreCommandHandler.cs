@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using RecruitProApp.Application.Common.Interfaces;
 
 namespace RecruitProApp.Application.JobApplications.Commands.Update
@@ -14,16 +14,14 @@ namespace RecruitProApp.Application.JobApplications.Commands.Update
 
         public async Task<Unit> Handle(UpdateScoreCommand request, CancellationToken cancellationToken)
         {
-            var app = await _jobApplicationRepository.GetByIdAsync(request.ApplicationId, cancellationToken);
-            if (app == null)
-                throw new KeyNotFoundException("Candidature introuvable.");
+            var app = await _jobApplicationRepository.GetByIdAsync(request.ApplicationId, cancellationToken)
+                ?? throw new KeyNotFoundException("Job application not found.");
 
-            app.UpdateScore(request.Score);
+            app.SetScore(request.Score);
 
             await _jobApplicationRepository.UpdateAsync(app, cancellationToken);
 
             return Unit.Value;
         }
     }
-
 }

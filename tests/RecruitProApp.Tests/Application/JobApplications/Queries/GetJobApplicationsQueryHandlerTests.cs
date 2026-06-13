@@ -1,4 +1,4 @@
-﻿using NSubstitute;
+using NSubstitute;
 using RecruitProApp.Application.Common.Interfaces;
 using RecruitProApp.Application.JobApplications.Queries;
 using RecruitProApp.Domain.Entities.JobApplications;
@@ -22,7 +22,7 @@ namespace RecruitProApp.Tests.Application.JobApplications.Queries
         {
             var fakeData = new List<JobApplication>
             {
-                new(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, JobApplicationStatus.PENDING)
+                JobApplication.Submit(Guid.NewGuid(), Guid.NewGuid())
             };
 
             _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(fakeData);

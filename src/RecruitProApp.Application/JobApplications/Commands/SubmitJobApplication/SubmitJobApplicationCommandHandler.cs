@@ -1,8 +1,6 @@
-﻿using MediatR;
+using MediatR;
 using RecruitProApp.Application.Common.Interfaces;
-using RecruitProApp.Domain.Entities;
 using RecruitProApp.Domain.Entities.JobApplications;
-using RecruitProApp.Domain.Entities.JobApplications.Enums;
 
 namespace RecruitProApp.Application.JobApplications.Commands.SubmitJobApplication
 {
@@ -17,14 +15,10 @@ namespace RecruitProApp.Application.JobApplications.Commands.SubmitJobApplicatio
 
         public async Task<Guid> Handle(SubmitJobApplicationCommand request, CancellationToken cancellationToken)
         {
-            var application = new JobApplication(
-                request.OfferId,
-                request.CandidateId,
-                    DateTime.UtcNow,
-                JobApplicationStatus.PENDING
-            );
+            var application = JobApplication.Submit(request.OfferId, request.CandidateId);
 
             await _repository.AddAsync(application, cancellationToken);
+
             return application.Id;
         }
     }

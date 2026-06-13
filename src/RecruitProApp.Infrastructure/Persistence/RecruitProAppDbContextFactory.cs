@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace RecruitProApp.Infrastructure.Persistence
 {
@@ -8,13 +8,13 @@ namespace RecruitProApp.Infrastructure.Persistence
     {
         public RecruitProAppDbContext CreateDbContext(string[] args)
         {
-            // Chemin racine du projet de démarrage RecruitProApp.WebAPI (là où se trouve appsettings.json)
+            // Root path of the startup project RecruitProApp.WebAPI (where appsettings.json lives).
             var routePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../RecruitProApp.WebAPI"));
 
             var config = new ConfigurationBuilder()
                 .SetBasePath(routePath)
                 .AddJsonFile("appsettings.json", optional: false)
-                .AddJsonFile("appsettings.Develoment.json", optional: true)
+                .AddJsonFile("appsettings.Development.json", optional: true)
                 .Build();
 
             var connectionString = config.GetConnectionString("DefaultConnection");
@@ -24,7 +24,7 @@ namespace RecruitProApp.Infrastructure.Persistence
             var optionBuilder = new DbContextOptionsBuilder<RecruitProAppDbContext>();
             optionBuilder.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
 
-            return new RecruitProAppDbContext(optionBuilder.Options);
+            return new RecruitProAppDbContext(optionBuilder.Options, new NoOpPublisher());
         }
     }
 }
