@@ -7,6 +7,7 @@ using RecruitProApp.Application.Common.Interfaces;
 using RecruitProApp.Infrastructure;
 using RecruitProApp.Infrastructure.Persistence;
 using RecruitProApp.Infrastructure.Repositories;
+using RecruitProApp.WebAPI.Middleware;
 using Serilog;
 
 // Serilog configuration
@@ -81,6 +82,10 @@ builder.Services.AddOpenTelemetry()
         }
     });
 
+// Global exception handling -> RFC 7807 ProblemDetails responses
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -96,6 +101,9 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<RecruitProAppDbContext>();
     dbContext.Database.Migrate();
 }
+
+// Must be first in the pipeline so it wraps every downstream component.
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
