@@ -1,0 +1,61 @@
+# .NET Core
+bin/
+obj/
+*.user
+*.rsuser
+*.suo
+*.userprefs
+*.log
+*.vs/
+.vscode/
+*.vscode/
+
+# Visual Studio
+*.sln.docstates
+
+# ASP.NET Core
+wwwroot/lib/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Node / Angular
+node_modules/
+dist/
+tmp/
+out-tsc/
+.angular/
+
+# Docker
+
+# Logs
+logs/
+*.log
+
+# Coverage files
+coverage/
+*.coverage
+*.coveragexml
+*.lcov
+
+# JetBrains Rider
+.idea/
+
+# Others
+*.DS_Store
+Thumbs.db
+
+# OneDrive sync files
+~$*
+
+# Environment variables
+.env
+
+# Test results
+TestResults/
+
+# IIS Express
+/.vs/

@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+*.user
+*.mdf
+*.ldf
+*.db
+.vscode/
+.env
+.git/
+.gitignore
+README.md
+Dockerfile
+docker-compose*
