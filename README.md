@@ -1,127 +1,190 @@
-# RecruitProApp – ATS (Applicant Tracking System)
+# RecruitProApp — Clean Architecture / DDD / CQRS (.NET 9)
 
-**Plateforme de gestion de recrutement moderne** pour les RH avec Une API modulaire .NET 9 respectant les principes SOLID, l'architecture Clean (DDD + CQRS + MediatR), avec observabilité via OpenTelemetry et logging via Serilog et visualisation des logs et métriques via Azure Application Insight.
+[![CI](https://github.com/abdel-rahmane-anp/recruitpro-clean-architecture/actions/workflows/ci.yml/badge.svg)](https://github.com/abdel-rahmane-anp/recruitpro-clean-architecture/actions/workflows/ci.yml)
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![License](https://img.shields.io/badge/license-MIT-green)
 
----
+A backend **Applicant Tracking System (ATS)** API built to demonstrate a clean, production-oriented **.NET 9** architecture: **Clean Architecture**, **Domain-Driven Design**, **CQRS with MediatR**, **EF Core / SQL Server**, structured logging (**Serilog**) and **OpenTelemetry** tracing — all runnable with a single command.
 
-## Sommaire
-
-- [Objectif](#-objectif)
-- [Architecture](#-architecture)
-- [Lancer le projet (dev)](#-lancer-le-projet-dev)
-- [Arborescence](#-arborescence)
-- [Technologies](#️-technologies)
-- [API & Swagger](#-api--swagger)
-- [Fonctionnalités RH](#-fonctionnalités-rh)
-- [Build & Déploiement](#-build--déploiement)
-- [Auteur](#️-auteur)
+> This repository is intentionally **backend-only** to keep the focus on architecture and domain design. It is a portfolio project, not a commercial product.
 
 ---
 
-# Objectif
+## What this project demonstrates
 
-Développer une application de recrutement RH moderne, modulaire et évolutive avec :
-- Automatisation du processus RH
-- Gestion des offres, candidats, entretiens, scoring
-- Dashboard en temps réel via **SignalR**
+- **Strict layering** with the Clean Architecture dependency rule (the Domain depends on nothing).
+- **CQRS** — every use case is an explicit `Command` or `Query` handled by a dedicated MediatR handler.
+- **Feature-oriented organisation** by business area (Candidates, Offers, JobApplications, Interviews).
+- **Encapsulated entities** (private setters, intent-revealing methods) instead of public data bags.
+- **Observability by design** — Serilog structured logs + OpenTelemetry traces, with optional Azure Monitor export.
+- **Runnable out of the box** — `docker compose up` spins up SQL Server + the API and applies migrations automatically.
 
 ---
 
-# Architecture
+## Architecture
 
-> Basée sur une architecture **Clean Architecture** (CQRS + DDD)
+Clean Architecture — dependencies point **inward**, toward the Domain.
 
-```bash
-RecruitProApp/
-├── src/
-│   ├── RecruitProApp.Application/       # Handlers CQRS, DTOs, logique métier
-│   ├── RecruitProApp.Domain/            # Entités, enums, règles métier pures (DDD)
-│   ├── RecruitProApp.Infrastructure/    # EF Core, SQL Server, emails, etc.
-│   ├── RecruitProApp.WebAPI/            # API REST .NET 9 + Swagger (Contrôleurs, Startup, Swagger)
-│   └── RecruitProApp.WebClient/         # Angular 19 + Angular Material
-├── tests/
-│   ├── RecruitProApp.Tests/             # Tests unitaires avec xUnit
+```mermaid
+flowchart TD
+    API["WebAPI<br/>(ASP.NET Core 9, Controllers, Swagger)"]
+    APP["Application<br/>(CQRS, MediatR handlers, DTOs)"]
+    INF["Infrastructure<br/>(EF Core, SQL Server, repositories, services)"]
+    DOM["Domain<br/>(Entities, enums, business rules)"]
+
+    API --> APP
+    API --> INF
+    INF --> APP
+    APP --> DOM
+    INF --> DOM
 ```
 
-# Lancer le projet (dev)
-## 1. API .NET
-```bash
-cd src/RecruitProApp.WebAPI
-dotnet ef database update
-dotnet run
+- **Domain** — pure business model, no external dependency.
+- **Application** — orchestrates use cases (commands/queries), defines interfaces (repositories, services).
+- **Infrastructure** — implements those interfaces (EF Core persistence, repositories, email).
+- **WebAPI** — thin HTTP layer; controllers dispatch to MediatR and return DTOs.
+
+## Domain model
+
+```mermaid
+classDiagram
+    class Offer
+    class Candidate
+    class JobApplication {
+        +Guid Id
+        +JobApplicationStatus Status
+        +int Score
+        +DateTime AppliedAt
+    }
+    class Interview {
+        +Guid Id
+        +DateTime ScheduledAt
+        +string Link
+    }
+    class JobApplicationStatus {
+        <<enum>>
+        PENDING
+        ACCEPTED
+        REJECTED
+    }
+
+    Offer "1" --> "*" JobApplication : receives
+    Candidate "1" --> "*" JobApplication : submits
+    JobApplication "1" --> "*" Interview : schedules
+    JobApplication --> JobApplicationStatus
 ```
-Swagger disponible sur : https://localhost:7039/swagger
-
-## 2. Frontend Angular
-```bash
-cd src/RecruitProApp.WebClient
-npm install
-npm run start
-```
-Interface accessible sur : http://localhost:4200
-
-# Fonctionnalités RH
-- Gestion des offres, candidatures, entretiens
-- Automatisation du processus (email, statut, scoring)
-- Dashboard RH temps réel (SignalR)
-- Planification & annulation d’entretiens
-- Notification par email (SendGrid)
-- Scoring automatique des candidatures (bonus)
-
-## Fonctionnalités Tech
-- Couverture de tests unitaires (xUnit, AutoFixture, NSubstitute)
-- Logging structuré via Serilog
-- Traces distribuées avec OpenTelemetry
-- Visualisation des logs et métrics via Aure Monitor (Application Insight)
-- Déploiement via Docker
-
-# Technologies
-| Backend (.NET)         | Frontend (Angular)       |
-| ---------------------- | ------------------------ |
-| ASP.NET Core 9         | Angular 19               |
-| EF Core 9 (SQL Server) | Angular Material         |
-| MediatR (CQRS)         | Standalone Components    |
-| FluentValidation       | RxJS                     |
-| SignalR (temps réel)   | ApexCharts, FullCalendar |
-| xUnit / NSubstitute    |                          |
 
 ---
 
-## Tests
+## Tech stack
+
+| Concern | Technology |
+|---|---|
+| Runtime / API | ASP.NET Core 9, REST, Swagger (Swashbuckle) |
+| Application | MediatR (CQRS), DTOs |
+| Persistence | EF Core 9, SQL Server |
+| Logging | Serilog (console + rolling file) |
+| Tracing | OpenTelemetry (ASP.NET Core + HttpClient), optional Azure Monitor exporter |
+| Testing | xUnit, NSubstitute, AutoFixture, FluentAssertions |
+| Tooling | Docker, GitHub Actions (CI) |
+
+---
+
+## Getting started
+
+### Option A — Docker (recommended, one command)
+
+Requires Docker Desktop.
 
 ```bash
-cd tests/RecruitProApp.Tests
+git clone https://github.com/abdel-rahmane-anp/recruitpro-clean-architecture.git
+cd recruitpro-clean-architecture
+docker compose up --build
+```
+
+This starts SQL Server, builds and runs the API, and applies EF Core migrations automatically.
+
+- Swagger UI: **http://localhost:8080/swagger**
+
+### Option B — Local (.NET SDK)
+
+Requires the .NET 9 SDK and a local SQL Server / LocalDB (Windows). The connection string lives in `appsettings.json`.
+
+```bash
+dotnet restore
+dotnet run --project src/RecruitProApp.WebAPI
+```
+
+Migrations are applied automatically on startup — no manual `dotnet ef database update` needed.
+
+---
+
+## API overview
+
+| Resource | Description |
+|---|---|
+| `Offers` | Create and query job offers |
+| `Candidates` | Create and query candidates |
+| `JobApplications` | Submit, accept, reject, score applications |
+| `Interviews` | Schedule, reschedule, cancel interviews |
+
+Explore everything interactively via Swagger.
+
+---
+
+## Testing
+
+```bash
 dotnet test
 ```
-xUnit
-AutoFixture
-NSubstitute
 
-## Docker
-### 1. Build & run
-```bash
-docker build -t recruitproapp-api .
-docker run -d -p 8080:80 --name recruitpro recruitproapp-api
+Unit tests cover the application handlers using **NSubstitute** (mocking) and **AutoFixture** (test-data generation) — no database required, so they run fast in CI.
+
+---
+
+## Project structure
+
+```
+recruitpro-clean-architecture/
+├── src/
+│   ├── RecruitProApp.Domain/          # Entities, enums, repository interfaces (no dependencies)
+│   ├── RecruitProApp.Application/     # CQRS commands/queries, handlers, DTOs, interfaces
+│   ├── RecruitProApp.Infrastructure/  # EF Core, SQL Server, repositories, services
+│   └── RecruitProApp.WebAPI/          # ASP.NET Core 9 controllers, DI, Swagger
+├── tests/
+│   └── RecruitProApp.Tests/           # xUnit unit tests
+├── Dockerfile
+├── docker-compose.yml
+└── .github/workflows/ci.yml
 ```
 
-### 2. Swagger disponible
-http://localhost:8080/swagger
+---
 
-## Observabilité Azure (OpenTelemetry + Serilog)
-Les logs sont visibles dans Azure Monitor > Logs
+## Design decisions & trade-offs
 
-Les traces distribuées dans Application Insights > Live Metrics
+A few deliberate choices — and where this project is heading next:
 
-Export via OTLP + AzureMonitorLogExporter
+- **Backend-only scope.** The Angular client was removed from this repository to keep the focus on architecture. The goal here is to showcase domain and application design, not UI.
+- **CQRS without over-engineering.** Commands and queries are separated, but they share the same database — no separate read model. Appropriate for this domain size; a read model would be premature.
+- **Encapsulated but evolving domain.** Entities already use private setters and behaviour methods. The next iteration moves remaining state-transition logic (e.g. accept/reject) fully **into the aggregates** and introduces **domain events** and **value objects** (see roadmap).
+- **Optional observability.** Azure Monitor export is wired only when a connection string is supplied, so the app runs anywhere with zero cloud dependency.
 
-!!! Pensez à créer une Application Insights Resource dans Azure et copier la Connection String.
+## Roadmap (DDD deepening)
 
-## À venir
-- Gestion des candidatures
-- Ajout CV (upload)
-- Notification SignalR
-- Authentification JW
+- [ ] Rich aggregate behaviour with guarded state transitions (`Submit`, `Accept`, `Reject`) instead of generic setters
+- [ ] `BaseEntity` / `AggregateRoot` base with identity, equality and a domain-events collection
+- [ ] Domain events (`JobApplicationSubmitted`, `InterviewScheduled`, …) dispatched via MediatR after `SaveChanges`
+- [ ] Value objects (`Email`, `Score`, `MeetingLink`) to remove primitive obsession
+- [ ] EF Core mappings via `IEntityTypeConfiguration` to keep persistence concerns out of the Domain
 
-# Auteur 
->    __Abdel Rahmane__
->    contact : [in/abdel-rahmane](https://www.linkedin.com/in/abdel-rahmane/)
+---
+
+## Author
+
+**Abdel Rahmane NJI PAM** — Full Stack Software Engineer (.NET / Angular · Cloud Azure)
+
+[LinkedIn](https://www.linkedin.com/in/abdel-rahmane/) · [Portfolio](https://anp-web-tech.fr)
+
+## License
+
+Released under the [MIT License](LICENSE).

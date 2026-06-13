@@ -9,7 +9,7 @@ using RecruitProApp.Infrastructure.Persistence;
 using RecruitProApp.Infrastructure.Repositories;
 using Serilog;
 
-// Conf Serilog
+// Serilog configuration
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithEnvironmentName()
@@ -21,7 +21,7 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Cors
+// CORS
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddCors(options =>
 {
@@ -34,42 +34,51 @@ builder.Services.AddCors(options =>
                       });
 });
 
-//Récupère la chaîne de connexion depuis appsettings.json
+// Read the connection string from configuration (appsettings or the
+// ConnectionStrings__DefaultConnection environment variable).
 var defaultConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(defaultConnectionString))
 {
     throw new InvalidOperationException("DefaultConnection string is not configured in the application settings.");
 }
 
-// Ajoute la couche Infrastructure (DbContext, Repositories...)
+// Infrastructure layer (DbContext, repositories...)
 builder.Services.AddInfrastructure(defaultConnectionString);
 
-// Ajoute la couche Application (CQRS, Handlers, Services...)
+// Application layer (CQRS handlers, MediatR...)
 builder.Services.AddApplication();
 
-//Ajoute Serilog : remplacer le logger par Serilog
+// Replace the default logger with Serilog
 builder.Host.UseSerilog();
+
+// Application Insights / Azure Monitor is OPTIONAL.
+// It is only wired up when a connection string is provided, e.g. via the
+// ApplicationInsights__ConnectionString environment variable. This keeps the
+// app fully runnable locally and in containers without any Azure dependency.
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+var azureMonitorEnabled = !string.IsNullOrWhiteSpace(appInsightsConnectionString);
+
 builder.Logging.AddOpenTelemetry(options =>
 {
     options.IncludeScopes = true;
-    options.AddAzureMonitorLogExporter(o =>
+    if (azureMonitorEnabled)
     {
-        o.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-    });
+        options.AddAzureMonitorLogExporter(o => o.ConnectionString = appInsightsConnectionString);
+    }
 });
 
-// Add OpenTelemtry
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracerProviderBuilder =>
     {
         tracerProviderBuilder
             .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("RecruitProApp"))
             .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
-            .AddAzureMonitorTraceExporter(options =>
-            {
-                options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
-            });
+            .AddHttpClientInstrumentation();
+
+        if (azureMonitorEnabled)
+        {
+            tracerProviderBuilder.AddAzureMonitorTraceExporter(o => o.ConnectionString = appInsightsConnectionString);
+        }
     });
 
 builder.Services.AddControllers();
@@ -77,6 +86,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Apply pending EF Core migrations at startup so the application is runnable
+// out of the box (e.g. via `docker compose up`). Transient connection errors
+// while the database container is starting are retried thanks to
+// EnableRetryOnFailure configured on the DbContext.
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<RecruitProAppDbContext>();
+    dbContext.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
