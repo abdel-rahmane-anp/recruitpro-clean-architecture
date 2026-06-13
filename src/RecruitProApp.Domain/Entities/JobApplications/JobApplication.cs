@@ -4,6 +4,7 @@ using RecruitProApp.Domain.Entities.Interviews;
 using RecruitProApp.Domain.Entities.JobApplications.Enums;
 using RecruitProApp.Domain.Entities.JobApplications.Events;
 using RecruitProApp.Domain.Entities.Offers;
+using RecruitProApp.Domain.ValueObjects;
 
 namespace RecruitProApp.Domain.Entities.JobApplications
 {
@@ -15,7 +16,7 @@ namespace RecruitProApp.Domain.Entities.JobApplications
     public class JobApplication : AggregateRoot
     {
         public Guid Id { get; private set; } = Guid.NewGuid();
-        public int Score { get; private set; }
+        public Score Score { get; private set; } = new Score(0);
         public JobApplicationStatus Status { get; private set; } = JobApplicationStatus.PENDING;
         public DateTime AppliedAt { get; private set; }
 
@@ -53,17 +54,14 @@ namespace RecruitProApp.Domain.Entities.JobApplications
         }
 
         /// <summary>
-        /// Assigns a score (0-100). A strong score (&gt;= 70) automatically
-        /// preselects an application that is still pending.
+        /// Assigns a score (0-100). A strong score automatically preselects an
+        /// application that is still pending.
         /// </summary>
         public void SetScore(int score)
         {
-            if (score is < 0 or > 100)
-                throw new DomainException("Score must be between 0 and 100.");
+            Score = new Score(score);
 
-            Score = score;
-
-            if (Status == JobApplicationStatus.PENDING && score >= 70)
+            if (Status == JobApplicationStatus.PENDING && Score.IsStrong)
                 Status = JobApplicationStatus.PRESELECTED;
         }
 

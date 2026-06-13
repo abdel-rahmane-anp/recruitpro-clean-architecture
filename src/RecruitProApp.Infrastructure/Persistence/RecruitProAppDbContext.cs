@@ -6,6 +6,7 @@ using RecruitProApp.Domain.Entities.Candidates;
 using RecruitProApp.Domain.Entities.Interviews;
 using RecruitProApp.Domain.Entities.JobApplications;
 using RecruitProApp.Domain.Entities.Offers;
+using RecruitProApp.Domain.ValueObjects;
 
 namespace RecruitProApp.Infrastructure.Persistence
 {
@@ -63,6 +64,10 @@ namespace RecruitProApp.Infrastructure.Persistence
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Status).HasMaxLength(100);
 
+                // Value object <-> int column (no schema change).
+                entity.Property(e => e.Score)
+                      .HasConversion(score => score.Value, value => new Score(value));
+
                 entity.HasOne(e => e.Offer)
                       .WithMany(o => o.JobApplications)
                       .HasForeignKey(e => e.OfferId);
@@ -76,6 +81,12 @@ namespace RecruitProApp.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.FirstName).HasMaxLength(100);
+
+                // Value object <-> nvarchar column (no schema change).
+                entity.Property(e => e.Email)
+                      .HasConversion(email => email.Value, value => new Email(value))
+                      .HasMaxLength(256)
+                      .IsRequired();
             });
 
             modelBuilder.Entity<Interview>(entity =>

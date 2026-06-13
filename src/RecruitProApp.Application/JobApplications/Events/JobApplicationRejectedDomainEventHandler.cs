@@ -22,7 +22,7 @@ namespace RecruitProApp.Application.JobApplications.Events
             var candidate = await _candidates.GetByIdAsync(notification.CandidateId, cancellationToken);
             if (candidate is null) return;
 
-            await _email.SendAsync(candidate.Email, "Application update",
+            await _email.SendAsync(candidate.Email.Value, "Application update",
                 $"Your application was not retained. Reason: {notification.Reason}");
         }
     }

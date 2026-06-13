@@ -22,7 +22,7 @@ namespace RecruitProApp.Application.JobApplications.Events
             var candidate = await _candidates.GetByIdAsync(notification.CandidateId, cancellationToken);
             if (candidate is null) return;
 
-            await _email.SendAsync(candidate.Email, "Application received",
+            await _email.SendAsync(candidate.Email.Value, "Application received",
                 "Thank you, your application has been received.");
         }
     }
